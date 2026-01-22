@@ -1,0 +1,10 @@
+name: KingdomsAttributes
+main: gg.brim.kingdomsattributes.KingdomsAttributes
+version: '${project.version}'
+api-version: '1.21'
+folia-supported: true
+
+depend:
+  - KingdomsAddon
+
+description: Scale modifier for snow kingdom players
