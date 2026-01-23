@@ -1,7 +1,7 @@
-package gg.brim.kingdomsattributes.listeners;
+package su.brim.kingdomsattributes.listeners;
 
-import gg.brim.kingdoms.api.KingdomsAPI;
-import gg.brim.kingdomsattributes.KingdomsAttributes;
+import su.brim.kingdoms.api.KingdomsAPI;
+import su.brim.kingdomsattributes.KingdomsAttributes;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.Player;
@@ -41,12 +41,27 @@ public class PlayerScaleListener implements Listener {
             return;
         }
 
+        // Админы не получают модификаторы
+        if (api.isAdmin(player)) {
+            resetScale(player);
+            return;
+        }
+        
+        // Проверяем исключения
+        if (plugin.isPlayerExcluded(player.getName())) {
+            resetScale(player);
+            return;
+        }
+
         String kingdom = api.getPlayerKingdom(player.getUniqueId());
         
-        if (SNOW_KINGDOM.equals(kingdom) && !plugin.isPlayerExcluded(player.getName())) {
+        if (SNOW_KINGDOM.equals(kingdom)) {
             double scale = plugin.getSnowKingdomScale();
             setScale(player, scale);
             plugin.getLogger().info("Applied scale " + scale + " to " + player.getName() + " (Snow Kingdom)");
+        } else {
+            // Для игроков других королевств сбрасываем на стандартный размер
+            resetScale(player);
         }
     }
 

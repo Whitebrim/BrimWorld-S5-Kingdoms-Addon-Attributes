@@ -4,9 +4,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>gg.brim</groupId>
+    <groupId>su.brim</groupId>
     <artifactId>KingdomsAttributes</artifactId>
-    <version>1.1.0</version>
+    <version>1.2.0</version>
     <packaging>jar</packaging>
 
     <name>KingdomsAttributes</name>
@@ -33,13 +33,13 @@
         <dependency>
             <groupId>dev.folia</groupId>
             <artifactId>folia-api</artifactId>
-            <version>1.21.4-R0.1-SNAPSHOT</version>
+            <version>1.21.8-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.github.Whitebrim</groupId>
             <artifactId>BrimWorld-S5-Kingdoms</artifactId>
-            <version>master-SNAPSHOT</version>
+            <version>1.8.0</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

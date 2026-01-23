@@ -1,6 +1,8 @@
-package gg.brim.kingdomsattributes;
+package su.brim.kingdomsattributes;
 
-import gg.brim.kingdomsattributes.listeners.PlayerScaleListener;
+import su.brim.kingdomsattributes.commands.KingdomsAttributesCommand;
+import su.brim.kingdomsattributes.listeners.PlayerScaleListener;
+import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.HashSet;
@@ -24,6 +26,14 @@ public final class KingdomsAttributes extends JavaPlugin {
         // Загружаем конфиг
         saveDefaultConfig();
         loadConfiguration();
+
+        // Регистрируем команду
+        KingdomsAttributesCommand commandExecutor = new KingdomsAttributesCommand(this);
+        PluginCommand command = getCommand("kingdomsattributes");
+        if (command != null) {
+            command.setExecutor(commandExecutor);
+            command.setTabCompleter(commandExecutor);
+        }
 
         // Регистрируем слушатели
         getServer().getPluginManager().registerEvents(new PlayerScaleListener(this), this);
@@ -57,6 +67,10 @@ public final class KingdomsAttributes extends JavaPlugin {
     
     public boolean isPlayerExcluded(String playerName) {
         return excludedPlayers.contains(playerName.toLowerCase());
+    }
+    
+    public int getExcludedPlayersCount() {
+        return excludedPlayers.size();
     }
 
     public static KingdomsAttributes getInstance() {
