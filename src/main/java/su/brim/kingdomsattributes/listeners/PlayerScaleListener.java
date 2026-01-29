@@ -17,6 +17,7 @@ public class PlayerScaleListener implements Listener {
 
     private static final String SNOW_KINGDOM = "snow_kingdom";
     private static final double DEFAULT_SCALE = 1.0;
+    private static final double DEFAULT_ENTITY_REACH = 3.0;
 
     private final KingdomsAttributes plugin;
 
@@ -44,12 +45,14 @@ public class PlayerScaleListener implements Listener {
         // Админы не получают модификаторы
         if (api.isAdmin(player)) {
             resetScale(player);
+            resetEntityReach(player);
             return;
         }
         
         // Проверяем исключения
         if (plugin.isPlayerExcluded(player.getName())) {
             resetScale(player);
+            resetEntityReach(player);
             return;
         }
 
@@ -59,9 +62,9 @@ public class PlayerScaleListener implements Listener {
             double scale = plugin.getSnowKingdomScale();
             setScale(player, scale);
             plugin.getLogger().info("Applied scale " + scale + " to " + player.getName() + " (Snow Kingdom)");
-        } else {
-            // Для игроков других королевств сбрасываем на стандартный размер
-            resetScale(player);
+            double entityReach = plugin.getSnowKingdomEntityReach();
+            setEntityReach(player, entityReach);
+            plugin.getLogger().info("Applied entity reach " + entityReach + " to " + player.getName() + " (Snow Kingdom)");
         }
     }
 
@@ -76,6 +79,20 @@ public class PlayerScaleListener implements Listener {
         AttributeInstance attribute = player.getAttribute(Attribute.SCALE);
         if (attribute != null) {
             attribute.setBaseValue(DEFAULT_SCALE);
+        }
+    }
+
+    private void setEntityReach(Player player, double value) {
+        AttributeInstance attribute = player.getAttribute(Attribute.ENTITY_INTERACTION_RANGE);
+        if (attribute != null) {
+            attribute.setBaseValue(value);
+        }
+    }
+
+    private void resetEntityReach(Player player) {
+        AttributeInstance attribute = player.getAttribute(Attribute.ENTITY_INTERACTION_RANGE);
+        if (attribute != null) {
+            attribute.setBaseValue(DEFAULT_ENTITY_REACH);
         }
     }
 }

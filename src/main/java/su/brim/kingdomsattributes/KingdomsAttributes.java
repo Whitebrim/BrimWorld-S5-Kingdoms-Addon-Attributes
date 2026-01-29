@@ -16,6 +16,7 @@ public final class KingdomsAttributes extends JavaPlugin {
     private Logger logger;
     
     private double snowKingdomScale;
+    private double snowKingdomEntityReach;
     private Set<String> excludedPlayers;
 
     @Override
@@ -40,6 +41,7 @@ public final class KingdomsAttributes extends JavaPlugin {
 
         logger.info("KingdomsAttributes enabled!");
         logger.info("- Snow Kingdom scale: " + snowKingdomScale);
+        logger.info("- Snow Kingdom EntityReach: " + snowKingdomEntityReach);
         logger.info("- Excluded players: " + excludedPlayers.size());
     }
 
@@ -53,7 +55,8 @@ public final class KingdomsAttributes extends JavaPlugin {
         reloadConfig();
         
         snowKingdomScale = getConfig().getDouble("snow-kingdom.scale", 0.8);
-        
+        snowKingdomEntityReach = getConfig().getDouble("snow-kingdom.entity_reach", 2.75);
+
         List<String> excludedList = getConfig().getStringList("snow-kingdom.excluded-players");
         excludedPlayers = new HashSet<>();
         for (String name : excludedList) {
@@ -64,7 +67,11 @@ public final class KingdomsAttributes extends JavaPlugin {
     public double getSnowKingdomScale() {
         return snowKingdomScale;
     }
-    
+
+    public double getSnowKingdomEntityReach() {
+        return snowKingdomEntityReach;
+    }
+
     public boolean isPlayerExcluded(String playerName) {
         return excludedPlayers.contains(playerName.toLowerCase());
     }
