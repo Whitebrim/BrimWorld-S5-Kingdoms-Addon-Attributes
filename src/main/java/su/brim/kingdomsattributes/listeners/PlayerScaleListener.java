@@ -2,22 +2,69 @@ package su.brim.kingdomsattributes.listeners;
 
 import su.brim.kingdoms.api.KingdomsAPI;
 import su.brim.kingdomsattributes.KingdomsAttributes;
+import org.bukkit.Registry;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
+import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
 /**
- * Устанавливает GENERIC_SCALE для игроков снежного королевства
+ * При заходе игрока:
+ * 1. Сбрасывает ВСЕ атрибуты (удаляет модификаторы + возвращает base value управляемых атрибутов)
+ * 2. Если игрок в снежном королевстве — применяет атрибуты snow-kingdom
+ * 3. Если игрок в whitelist — применяет персональные атрибуты (перезаписывает snow-kingdom)
  */
 public class PlayerScaleListener implements Listener {
 
     private static final String SNOW_KINGDOM = "snow_kingdom";
-    private static final double DEFAULT_SCALE = 1.0;
-    private static final double DEFAULT_ENTITY_REACH = 3.0;
+
+    /**
+     * Правильные дефолтные значения атрибутов ДЛЯ ИГРОКА (Player).
+     * Отличаются от Attribute.getDefaultValue() которые возвращают generic defaults!
+     * Например: MOVEMENT_SPEED generic default = 0.7, player default = 0.1
+     */
+    private static final Map<Attribute, Double> PLAYER_DEFAULTS = new HashMap<>();
+
+    static {
+        PLAYER_DEFAULTS.put(Attribute.MAX_HEALTH, 20.0);
+        PLAYER_DEFAULTS.put(Attribute.FOLLOW_RANGE, 32.0);
+        PLAYER_DEFAULTS.put(Attribute.KNOCKBACK_RESISTANCE, 0.0);
+        PLAYER_DEFAULTS.put(Attribute.MOVEMENT_SPEED, 0.1);
+        PLAYER_DEFAULTS.put(Attribute.FLYING_SPEED, 0.02);
+        PLAYER_DEFAULTS.put(Attribute.ATTACK_DAMAGE, 1.0);
+        PLAYER_DEFAULTS.put(Attribute.ATTACK_KNOCKBACK, 0.0);
+        PLAYER_DEFAULTS.put(Attribute.ATTACK_SPEED, 4.0);
+        PLAYER_DEFAULTS.put(Attribute.ARMOR, 0.0);
+        PLAYER_DEFAULTS.put(Attribute.ARMOR_TOUGHNESS, 0.0);
+        PLAYER_DEFAULTS.put(Attribute.FALL_DAMAGE_MULTIPLIER, 1.0);
+        PLAYER_DEFAULTS.put(Attribute.LUCK, 0.0);
+        PLAYER_DEFAULTS.put(Attribute.MAX_ABSORPTION, 0.0);
+        PLAYER_DEFAULTS.put(Attribute.SAFE_FALL_DISTANCE, 3.0);
+        PLAYER_DEFAULTS.put(Attribute.SCALE, 1.0);
+        PLAYER_DEFAULTS.put(Attribute.STEP_HEIGHT, 0.6);
+        PLAYER_DEFAULTS.put(Attribute.GRAVITY, 0.08);
+        PLAYER_DEFAULTS.put(Attribute.JUMP_STRENGTH, 0.42);
+        PLAYER_DEFAULTS.put(Attribute.BURNING_TIME, 1.0);
+        PLAYER_DEFAULTS.put(Attribute.EXPLOSION_KNOCKBACK_RESISTANCE, 0.0);
+        PLAYER_DEFAULTS.put(Attribute.MOVEMENT_EFFICIENCY, 0.0);
+        PLAYER_DEFAULTS.put(Attribute.OXYGEN_BONUS, 0.0);
+        PLAYER_DEFAULTS.put(Attribute.WATER_MOVEMENT_EFFICIENCY, 0.0);
+        PLAYER_DEFAULTS.put(Attribute.BLOCK_INTERACTION_RANGE, 4.5);
+        PLAYER_DEFAULTS.put(Attribute.ENTITY_INTERACTION_RANGE, 3.0);
+        PLAYER_DEFAULTS.put(Attribute.BLOCK_BREAK_SPEED, 1.0);
+        PLAYER_DEFAULTS.put(Attribute.MINING_EFFICIENCY, 0.0);
+        PLAYER_DEFAULTS.put(Attribute.SNEAKING_SPEED, 0.3);
+        PLAYER_DEFAULTS.put(Attribute.SUBMERGED_MINING_SPEED, 0.2);
+        PLAYER_DEFAULTS.put(Attribute.SWEEPING_DAMAGE_RATIO, 0.0);
+    }
 
     private final KingdomsAttributes plugin;
 
@@ -29,70 +76,109 @@ public class PlayerScaleListener implements Listener {
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
 
-        // Используем Folia-совместимый scheduler для работы с entity
+        // Folia-совместимый scheduler
         player.getScheduler().run(plugin, scheduledTask -> {
-            applyScaleModifier(player);
+            applyAttributes(player);
         }, null);
     }
 
-    private void applyScaleModifier(Player player) {
+    private void applyAttributes(Player player) {
+        Set<Attribute> managedAttributes = plugin.getAllManagedAttributes();
+
+        // 1. Сбрасываем ВСЕ атрибуты
+        resetAllAttributes(player, managedAttributes);
+
         KingdomsAPI api = KingdomsAPI.getInstance();
         if (api == null) {
             plugin.getLogger().warning("KingdomsAPI not available!");
-            return;
-        }
-
-        // Админы не получают модификаторы
-        if (api.isAdmin(player)) {
-            resetScale(player);
-            resetEntityReach(player);
-            return;
-        }
-        
-        // Проверяем исключения
-        if (plugin.isPlayerExcluded(player.getName())) {
-            resetScale(player);
-            resetEntityReach(player);
+            applyWhitelistIfPresent(player, managedAttributes);
             return;
         }
 
         String kingdom = api.getPlayerKingdom(player.getUniqueId());
-        
+
+        // 2. Если игрок в снежном королевстве — применяем атрибуты
         if (SNOW_KINGDOM.equals(kingdom)) {
-            double scale = plugin.getSnowKingdomScale();
-            setScale(player, scale);
-            plugin.getLogger().info("Applied scale " + scale + " to " + player.getName() + " (Snow Kingdom)");
-            double entityReach = plugin.getSnowKingdomEntityReach();
-            setEntityReach(player, entityReach);
-            plugin.getLogger().info("Applied entity reach " + entityReach + " to " + player.getName() + " (Snow Kingdom)");
+            Map<Attribute, Double> snowAttrs = plugin.getSnowKingdomAttributes();
+            for (Map.Entry<Attribute, Double> entry : snowAttrs.entrySet()) {
+                setAttribute(player, entry.getKey(), entry.getValue());
+            }
+            plugin.getLogger().info("Applied snow kingdom attributes to " + player.getName());
+        }
+
+        // 3. Если игрок в whitelist — перезаписываем
+        applyWhitelistIfPresent(player, managedAttributes);
+    }
+
+    private void applyWhitelistIfPresent(Player player, Set<Attribute> managedAttributes) {
+        if (plugin.isInWhitelist(player.getName())) {
+            resetManagedAttributes(player, managedAttributes);
+
+            Map<Attribute, Double> playerAttrs = plugin.getWhitelistAttributes(player.getName());
+            for (Map.Entry<Attribute, Double> entry : playerAttrs.entrySet()) {
+                setAttribute(player, entry.getKey(), entry.getValue());
+            }
+            plugin.getLogger().info("Applied whitelist attributes to " + player.getName()
+                    + " (" + playerAttrs.size() + " attributes)");
         }
     }
 
-    private void setScale(Player player, double scale) {
-        AttributeInstance attribute = player.getAttribute(Attribute.SCALE);
-        if (attribute != null) {
-            attribute.setBaseValue(scale);
+    /**
+     * Сбрасывает все атрибуты игрока:
+     * - Удаляет ВСЕ модификаторы со ВСЕХ атрибутов
+     * - Возвращает base value в дефолт только для управляемых атрибутов
+     */
+    private void resetAllAttributes(Player player, Set<Attribute> managedAttributes) {
+        for (Attribute attribute : Registry.ATTRIBUTE) {
+            try {
+                AttributeInstance instance = player.getAttribute(attribute);
+                if (instance == null) continue;
+
+                // Удаляем все модификаторы
+                for (AttributeModifier modifier : instance.getModifiers()) {
+                    instance.removeModifier(modifier);
+                }
+
+                // Base value сбрасываем только для управляемых атрибутов
+                if (managedAttributes.contains(attribute)) {
+                    Double playerDefault = PLAYER_DEFAULTS.get(attribute);
+                    if (playerDefault != null) {
+                        instance.setBaseValue(playerDefault);
+                    }
+                }
+            } catch (Exception ignored) {
+            }
         }
     }
 
-    private void resetScale(Player player) {
-        AttributeInstance attribute = player.getAttribute(Attribute.SCALE);
-        if (attribute != null) {
-            attribute.setBaseValue(DEFAULT_SCALE);
+    /**
+     * Сбрасывает только управляемые атрибуты (для whitelist перезаписи)
+     */
+    private void resetManagedAttributes(Player player, Set<Attribute> managedAttributes) {
+        for (Attribute attribute : managedAttributes) {
+            try {
+                AttributeInstance instance = player.getAttribute(attribute);
+                if (instance == null) continue;
+
+                for (AttributeModifier modifier : instance.getModifiers()) {
+                    instance.removeModifier(modifier);
+                }
+
+                Double playerDefault = PLAYER_DEFAULTS.get(attribute);
+                if (playerDefault != null) {
+                    instance.setBaseValue(playerDefault);
+                }
+            } catch (Exception ignored) {
+            }
         }
     }
 
-    private void setEntityReach(Player player, double value) {
-        AttributeInstance attribute = player.getAttribute(Attribute.ENTITY_INTERACTION_RANGE);
-        if (attribute != null) {
-            attribute.setBaseValue(value);
-        }
-    }
-
-    private void resetEntityReach(Player player) {
-        AttributeInstance attribute = player.getAttribute(Attribute.ENTITY_INTERACTION_RANGE);
-        if (attribute != null) {
-            attribute.setBaseValue(DEFAULT_ENTITY_REACH);
+    private void setAttribute(Player player, Attribute attribute, double value) {
+        AttributeInstance instance = player.getAttribute(attribute);
+        if (instance != null) {
+            instance.setBaseValue(value);
+        } else {
+            plugin.getLogger().warning("Attribute " + attribute.getKey() + " not available for " + player.getName());
         }
     }
 }

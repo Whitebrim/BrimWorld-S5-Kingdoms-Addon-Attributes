@@ -1,13 +1,31 @@
 # KingdomsAttributes Configuration
 
+# Атрибуты снежного королевства (применяются всем игрокам snow_kingdom)
+# Названия атрибутов — snake_case из Minecraft (scale, entity_interaction_range, max_health и т.д.)
 snow-kingdom:
   scale: 0.8
-  entity_reach: 2.75
-  
-  # Список игроков-исключений (ники)
-  # Эти игроки не получат изменение размера, даже если они в снежном королевстве
-  # Ники нечувствительны к регистру
-  excluded-players:
-    - Erailos_Gray
-    - byokinoshojo
-    - Finesanti_2013
+  entity_interaction_range: 2.75
+
+# White-list: персональные атрибуты для конкретных игроков
+# Перезаписывают ВСЁ — если игрок в whitelist, ему ставятся ТОЛЬКО эти значения
+# (остальные атрибуты остаются дефолтными после сброса)
+# Можно использовать как black-list для жителей снежного королевства
+# Ники нечувствительны к регистру
+#
+# Полный список атрибутов (snake_case):
+#   max_health, follow_range, knockback_resistance, movement_speed, flying_speed,
+#   attack_damage, attack_knockback, attack_speed, armor, armor_toughness,
+#   fall_damage_multiplier, luck, max_absorption, safe_fall_distance, scale,
+#   step_height, gravity, jump_strength, burning_time, explosion_knockback_resistance,
+#   movement_efficiency, oxygen_bonus, water_movement_efficiency, block_interaction_range,
+#   entity_interaction_range, block_break_speed, mining_efficiency, sneaking_speed,
+#   submerged_mining_speed, sweeping_damage_ratio
+#
+# Пример:
+# whitelist:
+#   fallenfleur:
+#     scale: 0.8
+#   someplayername:
+#     scale: 0.5
+#     entity_interaction_range: 3.0
+whitelist: {}

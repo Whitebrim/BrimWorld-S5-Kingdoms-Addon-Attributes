@@ -6,7 +6,7 @@
 
     <groupId>su.brim</groupId>
     <artifactId>KingdomsAttributes</artifactId>
-    <version>1.3.0</version>
+    <version>1.3.2</version>
     <packaging>jar</packaging>
 
     <name>KingdomsAttributes</name>

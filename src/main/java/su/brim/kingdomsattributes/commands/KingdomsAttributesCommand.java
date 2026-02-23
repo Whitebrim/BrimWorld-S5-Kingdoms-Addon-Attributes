@@ -20,9 +20,9 @@ public class KingdomsAttributesCommand implements CommandExecutor, TabCompleter 
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, 
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
                              @NotNull String label, @NotNull String[] args) {
-        
+
         if (args.length == 0) {
             sender.sendMessage("§6KingdomsAttributes §7v" + plugin.getDescription().getVersion());
             sender.sendMessage("§7Используйте §f/" + label + " reload §7для перезагрузки конфига");
@@ -37,8 +37,8 @@ public class KingdomsAttributesCommand implements CommandExecutor, TabCompleter 
 
             plugin.loadConfiguration();
             sender.sendMessage("§aКонфигурация перезагружена!");
-            sender.sendMessage("§7- Scale: §f" + plugin.getSnowKingdomScale());
-            sender.sendMessage("§7- Исключений: §f" + plugin.getExcludedPlayersCount());
+            sender.sendMessage("§7- Snow Kingdom атрибутов: §f" + plugin.getSnowKingdomAttributes().size());
+            sender.sendMessage("§7- Whitelist игроков: §f" + plugin.getWhitelistSize());
             return true;
         }
 
