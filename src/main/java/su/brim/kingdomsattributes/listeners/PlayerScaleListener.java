@@ -2,10 +2,8 @@ package su.brim.kingdomsattributes.listeners;
 
 import su.brim.kingdoms.api.KingdomsAPI;
 import su.brim.kingdomsattributes.KingdomsAttributes;
-import org.bukkit.Registry;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
-import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -18,7 +16,7 @@ import java.util.Set;
 
 /**
  * При заходе игрока:
- * 1. Сбрасывает ВСЕ атрибуты (удаляет модификаторы + возвращает base value управляемых атрибутов)
+ * 1. Сбрасывает управляемые атрибуты (только base value, без удаления модификаторов)
  * 2. Если игрок в снежном королевстве — применяет атрибуты snow-kingdom
  * 3. Если игрок в whitelist — применяет персональные атрибуты (перезаписывает snow-kingdom)
  */
@@ -85,8 +83,8 @@ public class PlayerScaleListener implements Listener {
     private void applyAttributes(Player player) {
         Set<Attribute> managedAttributes = plugin.getAllManagedAttributes();
 
-        // 1. Сбрасываем ВСЕ атрибуты
-        resetAllAttributes(player, managedAttributes);
+        // 1. Сбрасываем только управляемые атрибуты (base value)
+        resetManagedAttributes(player, managedAttributes);
 
         KingdomsAPI api = KingdomsAPI.getInstance();
         if (api == null) {
@@ -124,45 +122,16 @@ public class PlayerScaleListener implements Listener {
     }
 
     /**
-     * Сбрасывает все атрибуты игрока:
-     * - Удаляет ВСЕ модификаторы со ВСЕХ атрибутов
-     * - Возвращает base value в дефолт только для управляемых атрибутов
-     */
-    private void resetAllAttributes(Player player, Set<Attribute> managedAttributes) {
-        for (Attribute attribute : Registry.ATTRIBUTE) {
-            try {
-                AttributeInstance instance = player.getAttribute(attribute);
-                if (instance == null) continue;
-
-                // Удаляем все модификаторы
-                for (AttributeModifier modifier : instance.getModifiers()) {
-                    instance.removeModifier(modifier);
-                }
-
-                // Base value сбрасываем только для управляемых атрибутов
-                if (managedAttributes.contains(attribute)) {
-                    Double playerDefault = PLAYER_DEFAULTS.get(attribute);
-                    if (playerDefault != null) {
-                        instance.setBaseValue(playerDefault);
-                    }
-                }
-            } catch (Exception ignored) {
-            }
-        }
-    }
-
-    /**
-     * Сбрасывает только управляемые атрибуты (для whitelist перезаписи)
+     * Сбрасывает ТОЛЬКО управляемые атрибуты — ставит base value в player default.
+     * НЕ удаляет модификаторы — они ставятся Minecraft для экипировки (броня, зелья и т.д.)
+     * и их удаление ломает работу надетых предметов.
+     * Плагин работает только через setBaseValue, поэтому удалять модификаторы не нужно.
      */
     private void resetManagedAttributes(Player player, Set<Attribute> managedAttributes) {
         for (Attribute attribute : managedAttributes) {
             try {
                 AttributeInstance instance = player.getAttribute(attribute);
                 if (instance == null) continue;
-
-                for (AttributeModifier modifier : instance.getModifiers()) {
-                    instance.removeModifier(modifier);
-                }
 
                 Double playerDefault = PLAYER_DEFAULTS.get(attribute);
                 if (playerDefault != null) {
