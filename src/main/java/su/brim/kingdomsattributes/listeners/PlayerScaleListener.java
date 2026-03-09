@@ -12,11 +12,10 @@ import org.bukkit.event.player.PlayerJoinEvent;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * При заходе игрока:
- * 1. Сбрасывает управляемые атрибуты (только base value, без удаления модификаторов)
+ * 1. Сбрасывает ВСЕ атрибуты игрока (только base value, без удаления модификаторов)
  * 2. Если игрок в снежном королевстве — применяет атрибуты snow-kingdom
  * 3. Если игрок в whitelist — применяет персональные атрибуты (перезаписывает snow-kingdom)
  */
@@ -81,15 +80,14 @@ public class PlayerScaleListener implements Listener {
     }
 
     private void applyAttributes(Player player) {
-        Set<Attribute> managedAttributes = plugin.getAllManagedAttributes();
-
-        // 1. Сбрасываем только управляемые атрибуты (base value)
-        resetManagedAttributes(player, managedAttributes);
+        // 1. Сбрасываем ВСЕ атрибуты игрока (base value) — чтобы любые изменения
+        // через /attribute сбрасывались при перезаходе
+        resetAllAttributes(player);
 
         KingdomsAPI api = KingdomsAPI.getInstance();
         if (api == null) {
             plugin.getLogger().warning("KingdomsAPI not available!");
-            applyWhitelistIfPresent(player, managedAttributes);
+            applyWhitelistIfPresent(player);
             return;
         }
 
@@ -105,12 +103,12 @@ public class PlayerScaleListener implements Listener {
         }
 
         // 3. Если игрок в whitelist — перезаписываем
-        applyWhitelistIfPresent(player, managedAttributes);
+        applyWhitelistIfPresent(player);
     }
 
-    private void applyWhitelistIfPresent(Player player, Set<Attribute> managedAttributes) {
+    private void applyWhitelistIfPresent(Player player) {
         if (plugin.isInWhitelist(player.getName())) {
-            resetManagedAttributes(player, managedAttributes);
+            resetAllAttributes(player);
 
             Map<Attribute, Double> playerAttrs = plugin.getWhitelistAttributes(player.getName());
             for (Map.Entry<Attribute, Double> entry : playerAttrs.entrySet()) {
@@ -122,21 +120,17 @@ public class PlayerScaleListener implements Listener {
     }
 
     /**
-     * Сбрасывает ТОЛЬКО управляемые атрибуты — ставит base value в player default.
+     * Сбрасывает ВСЕ атрибуты игрока — ставит base value в player default.
+     * Это гарантирует, что любые изменения через /attribute будут сброшены при перезаходе.
      * НЕ удаляет модификаторы — они ставятся Minecraft для экипировки (броня, зелья и т.д.)
      * и их удаление ломает работу надетых предметов.
-     * Плагин работает только через setBaseValue, поэтому удалять модификаторы не нужно.
      */
-    private void resetManagedAttributes(Player player, Set<Attribute> managedAttributes) {
-        for (Attribute attribute : managedAttributes) {
+    private void resetAllAttributes(Player player) {
+        for (Map.Entry<Attribute, Double> entry : PLAYER_DEFAULTS.entrySet()) {
             try {
-                AttributeInstance instance = player.getAttribute(attribute);
+                AttributeInstance instance = player.getAttribute(entry.getKey());
                 if (instance == null) continue;
-
-                Double playerDefault = PLAYER_DEFAULTS.get(attribute);
-                if (playerDefault != null) {
-                    instance.setBaseValue(playerDefault);
-                }
+                instance.setBaseValue(entry.getValue());
             } catch (Exception ignored) {
             }
         }
